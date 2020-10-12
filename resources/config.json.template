@@ -1,0 +1,10 @@
+{
+  "jira": {
+    "address": "http://127.0.0.1:8080",
+    "api": "/rest/api/2",
+    "user": {
+      "login": "user1",
+      "password": "passw0rd"
+    }
+  }
+}

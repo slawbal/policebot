@@ -32,7 +32,7 @@ module.exports.healthCheck = function () {
     });
 }
 
-module.exports.getUserLoggedHoursFromDate = function (user, dateStart) {
+module.exports.getUserLoggedHoursFromDate = function (user, dateStart, dateEnd) {
     return fetch(url + api + '/search', {
         method: 'POST',
         headers: {
@@ -42,7 +42,7 @@ module.exports.getUserLoggedHoursFromDate = function (user, dateStart) {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: getLoggedHoursForUserJiraQuery(user, dateStart.getTime(), Date.now())
+        body: getLoggedHoursForUserJiraQuery(user, dateStart.getTime(), dateEnd.getTime())
     }).then(response => {
         console.log(
             `Response: ${response.status} ${response.statusText}`
@@ -71,8 +71,8 @@ module.exports.getWorkLog = function (resp, user) {
     var dateToLoggedHours = new SortedMap();
     resp.issues.forEach(issue => {
         issue.fields.worklog.worklogs.forEach(workLogItem => {
-            console.info(workLogItem.updateAuthor.name + " " + new Date(workLogItem.started).getDay() + " " + workLogItem.timeSpentSeconds);
-            console.info(issue.key);
+            // console.info(workLogItem.updateAuthor.name + " " + new Date(workLogItem.started).getDay() + " " + workLogItem.timeSpentSeconds);
+            // console.info(issue.key);
 
             if (workLogItem.updateAuthor.name === user) {
                 var dateKey = new Date(new Date(workLogItem.started).toDateString());

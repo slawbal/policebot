@@ -1,12 +1,17 @@
 var Discord = require('discord.io');
 var logger = require('winston');
 var auth = require('../resources/auth.json');
-
+var fs = require('fs');
 var SortedMap = require("collections/sorted-map");
 var jira = require("./boundry/outgoing/jira/jira-api");
-var MessageBuilder = require("./texting/message-builder")
+const Helper = require('./helper');
+var MessageBuilder = require("./texting/message-builder");
+var ExcelBuilder = require("./texting/xlsx-builder");
 const readline = require('readline');
-var messageBuilder = new MessageBuilder();
+
+// inner services
+let messageBuilder = new MessageBuilder();
+let excelBuilder = new ExcelBuilder();
 
 // Configure logger settings
 logger.remove(logger.transports.Console);
@@ -36,17 +41,16 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 
         var user = args[1];
 
-        var dStart = args[2];
-        if (dStart == null) {
-            dStart = 7;
-        }
-        var dateFrom = new Date();
-        dateFrom.setDate(dateFrom.getDate() - dStart);
-
         switch (cmd) {
 
             case 'wlog':
-                jira.getUserLoggedHoursFromDate(user, dateFrom).then(resp => {
+                var dStart = args[2];
+                if (dStart == null) {
+                    dStart = 7;
+                }
+                var dateFrom = new Date();
+                dateFrom.setDate(dateFrom.getDate() - dStart);
+                jira.getUserLoggedHoursFromDate(user, dateFrom, new Date()).then(resp => {
                     var daysToLoggedHours = jira.getWorkLog(resp, user);
 
                     let message = messageBuilder.buildLoggedHoursMessage(daysToLoggedHours, dateFrom);
@@ -73,7 +77,20 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 });
 
                 break;
-
+            case 'report':
+                let month = args[2];
+                let nameFile = args[3];
+                const range = Helper.getDateRange(month);
+                jira.getUserLoggedHoursFromDate(user, range.ts, range.te).then(resp => {
+                    const daysToLoggedHours = jira.getWorkLog(resp, user);
+                    const callBackUploadFile = function(fileName){
+                        bot.uploadFile({to: channelID, file: fileName}, () => {
+                            fs.unlinkSync(fileName)
+                        });
+                    };
+                    excelBuilder.buildReportFile(daysToLoggedHours, range.ts, range.te, callBackUploadFile, nameFile);
+                });
+                break;
         }
     }
 });

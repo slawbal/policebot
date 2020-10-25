@@ -3,11 +3,16 @@
 This is a Discord Bot which allows to collect time logged on tasks for a specified user
 
 #### Usage:
+
+##### See logged hours:
 `!wlog {jira-username}`
 
 or
 
 `!wlog {jira-username} {last x days}`
+
+##### Export logged hours as xlsx file:
+`!report {jira-username}  [month] [nameFile]`
 
 to see the status:
 

@@ -1,4 +1,6 @@
 const fs = require('fs');
+const Helper = require('../helper');
+
 good = ":white_check_mark:";
 bad = ":x:";
 tooGood = ":hammer_pick:";
@@ -33,10 +35,10 @@ class MessageBuilder {
                 issueList = log.issueId.split(",");
             }
 
-            var timeLoggedForADay = MessageBuilder.convertToHours(loggedTimeForADayInMs);
+            var timeLoggedForADay = Helper.convertToHours(loggedTimeForADayInMs);
 
             var sign = MessageBuilder.getSign(timeLoggedForADay);
-            if (MessageBuilder.isWeekend(day)) {
+            if (Helper.isWeekend(day)) {
                 sign = weekend;
             }
 
@@ -63,14 +65,7 @@ class MessageBuilder {
         return day.getDay() == 0;
     }
 
-    static isWeekend(day) {
-        return day.getDay() == 6 || day.getDay() == 0;
-    }
 
-    static convertToHours(loggedTimeForADayInMs) {
-        const HOUR = 3600;
-        return Number(loggedTimeForADayInMs) / HOUR;
-    }
 
     static getSign(loggedHours) {
         var sign = "";

@@ -6,7 +6,7 @@ var SortedMap = require("collections/sorted-map");
 var jira = require("./boundry/outgoing/jira/jira-api");
 const Helper = require('./helper');
 var MessageBuilder = require("./texting/message-builder");
-var ExcelBuilder = require("./texting/xlsx-builder");
+var ExcelBuilder = require("./reporting/xlsx-builder");
 const readline = require('readline');
 
 // inner services

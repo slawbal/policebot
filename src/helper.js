@@ -8,7 +8,7 @@ const monthNames = ["january", "february", "march", "april", "nay", "june",
 class Helper{
     static getDateRange(monthName){
         let month;
-        if (monthName == null) {
+        if (monthName == null || monthNames.includes(monthName)) {
             month = new Date().getMonth();
         } else {
             month = monthNames.indexOf(monthName);

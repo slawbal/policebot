@@ -1,10 +1,11 @@
 {
   "jira": {
     "address": "http://127.0.0.1:8080",
-    "api": "/rest/api/2",
+    "api": "/rest/api/2", // Only if using JWT authentication
+    "token": "JiraCloudToken", // Only if using JWT authentication
     "user": {
       "login": "user1",
-      "password": "passw0rd"
+      "password": "passw0rd" // Only if using login/password authentication
     }
   }
 }

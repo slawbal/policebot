@@ -7,14 +7,14 @@ let config = JSON.parse(cfgFile);
 let url = config.jira.address;
 let api = config.jira.api;
 let login = config.jira.user.login;
-let pass = config.jira.user.password;
+let token = config.jira.token;
 
 module.exports.healthCheck = function () {
     return timeout(500, fetch(url + api + '/myself', {
         method: 'GET',
         headers: {
             'Authorization': `Basic ${Buffer.from(
-                login + ':' + pass
+                login + ':' + token
             ).toString('base64')}`,
             'Accept': 'application/json',
             'Content-Type': 'application/json'
@@ -37,7 +37,7 @@ module.exports.getUserLoggedHoursFromDate = function (user, dateStart, dateEnd) 
         method: 'POST',
         headers: {
             'Authorization': `Basic ${Buffer.from(
-                login + ':' + pass
+                login + ':' + token
             ).toString('base64')}`,
             'Accept': 'application/json',
             'Content-Type': 'application/json'
@@ -71,8 +71,6 @@ module.exports.getWorkLog = function (resp, user) {
     var dateToLoggedHours = new SortedMap();
     resp.issues.forEach(issue => {
         issue.fields.worklog.worklogs.forEach(workLogItem => {
-            // console.info(workLogItem.updateAuthor.name + " " + new Date(workLogItem.started).getDay() + " " + workLogItem.timeSpentSeconds);
-            // console.info(issue.key);
 
             if (workLogItem.updateAuthor.name === user) {
                 var dateKey = new Date(new Date(workLogItem.started).toDateString());
@@ -81,7 +79,6 @@ module.exports.getWorkLog = function (resp, user) {
                 } else {
                     var log = dateToLoggedHours.get(dateKey);
                     log.log(workLogItem.timeSpentSeconds, issue.key)
-                    // dateToLoggedHours.set(dateKey, (log + workLogItem.timeSpentSeconds));
                 }
             }
         });

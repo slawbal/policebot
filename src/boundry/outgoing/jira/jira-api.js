@@ -72,7 +72,7 @@ module.exports.getWorkLog = function (resp, user) {
     resp.issues.forEach(issue => {
         issue.fields.worklog.worklogs.forEach(workLogItem => {
 
-            if (workLogItem.updateAuthor.name === user) {
+            if (workLogItem.updateAuthor.accountId === user) {
                 var dateKey = new Date(new Date(workLogItem.started).toDateString());
                 if (dateToLoggedHours.get(dateKey) == null) {
                     dateToLoggedHours.set(dateKey, new LoggedTime(workLogItem.timeSpentSeconds, issue.key));

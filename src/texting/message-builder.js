@@ -6,6 +6,10 @@ bad = ":x:";
 tooGood = ":hammer_pick:";
 weekend = ":island:";
 
+noReporting = 'You forgot to log your hours yesterday :frowning: Please try to do it as soon as possible.';
+uncompleteReporting = 'You logged some hours yesterday but it does not reach 8, please try to fill the blank :+1:';
+completeReporting = 'Good job for logging your hours yesterday :clap: Keep up the good work! ';
+
 let cfgFile = fs.readFileSync('resources/config.json');
 let config = JSON.parse(cfgFile);
 let url = config.jira.address;
@@ -20,7 +24,18 @@ class MessageBuilder {
             jiraStatus += "ERROR :red_circle:";
         }
         return "Status: \n" + jiraStatus;
+    }
 
+    buildFeedbackMessage(hoursLogged, username) {
+        let message = 'Good morning ' + username + ' :spy: \n';
+        if (hoursLogged === 0) {
+            message = message + noReporting;
+        } else if (hoursLogged < 8) {
+            message = message + uncompleteReporting;
+        } else if (hoursLogged === 8) {
+            message = message + completeReporting;
+        }
+        return message;
     }
 
     buildLoggedHoursMessage(myMap, dateFrom) {
@@ -29,7 +44,7 @@ class MessageBuilder {
         this.iterateOverEachDayFrom(dateFrom, function (day) {
             var loggedTimeForADayInMs = 0;
             var issueList;
-            var log = myMap.get(new Date(day.toDateString()));
+            var log = myMap.get(Helper.formatDate(day));
             if (log != null) {
                 loggedTimeForADayInMs = log.time;
                 issueList = log.issueId.split(",");

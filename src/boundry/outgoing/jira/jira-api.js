@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const SortedMap = require("collections/sorted-map");
 const fs = require('fs');
+const Helper = require('../../../helper');
 
 let cfgFile = fs.readFileSync('resources/config.json');
 let config = JSON.parse(cfgFile);
@@ -30,6 +31,23 @@ module.exports.healthCheck = function () {
         );
         return "ERROR";
     });
+}
+
+module.exports.getUserByUsername = function (username) {
+    return fetch(url + api + '/user/search?query=' + username,
+        {
+            method: 'GET',
+            headers: {
+                'Authorization': `Basic ${Buffer.from(
+                    login + ':' + token
+                ).toString('base64')}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            return response.json();
+        }
+    )
 }
 
 module.exports.getUserLoggedHoursFromDate = function (user, dateStart, dateEnd) {
@@ -73,7 +91,8 @@ module.exports.getWorkLog = function (resp, user) {
         issue.fields.worklog.worklogs.forEach(workLogItem => {
 
             if (workLogItem.updateAuthor.accountId === user) {
-                var dateKey = new Date(new Date(workLogItem.started).toDateString());
+
+                var dateKey = Helper.formatDate(workLogItem.started); //new Date(new Date(workLogItem.started).toDateString());
                 if (dateToLoggedHours.get(dateKey) == null) {
                     dateToLoggedHours.set(dateKey, new LoggedTime(workLogItem.timeSpentSeconds, issue.key));
                 } else {

@@ -1,13 +1,14 @@
-var Discord = require('discord.io');
-var logger = require('winston');
-var auth = require('../resources/auth.json');
-var fs = require('fs');
-var SortedMap = require("collections/sorted-map");
-var jira = require("./boundry/outgoing/jira/jira-api");
+const Discord = require('discord.js');
+const schedule = require('node-schedule');
+const logger = require('winston');
+const auth = require('../resources/auth.json');
+const fs = require('fs');
+const jira = require("./boundry/outgoing/jira/jira-api");
 const Helper = require('./helper');
-var MessageBuilder = require("./texting/message-builder");
-var ExcelBuilder = require("./reporting/xlsx-builder");
-const readline = require('readline');
+const MessageBuilder = require("./texting/message-builder");
+const ExcelBuilder = require("./reporting/xlsx-builder");
+const usersFile = fs.readFileSync('resources/users.json');
+const userList = JSON.parse(usersFile);
 
 // inner services
 let messageBuilder = new MessageBuilder();
@@ -21,76 +22,131 @@ logger.add(new logger.transports.Console, {
 
 logger.level = 'debug';
 // Initialize Discord Bot
-var bot = new Discord.Client({
-    token: auth.token,
-    autorun: true
-});
+const bot = new Discord.Client();
+let usersFeedbackSent = [];
+bot.login(auth.token)
 
-bot.on('ready', function (evt) {
+bot.on('ready', function () {
     logger.info('Connected');
-    logger.info('Logged in as: ');
-    logger.info(bot.username + ' - (' + bot.id + ')');
+    schedule.scheduleJob('59 23 * * *', () => {
+        console.log('Resetting list of users who received their daily feedback')
+        usersFeedbackSent = []
+    });
 });
 
-bot.on('message', function (user, userID, channelID, message, evt) {
+bot.on('voiceStateUpdate', (oldState, newState) => {
+        const newVoiceStateChannel = newState.channelID
+        const oldVoiceStateChannel = oldState.channelID
+        const memberId = oldState.member.id;
 
-    logger.info('chan id: ' + channelID);
-    if (message.substring(0, 1) == '!') {
-        var args = message.substring(1).split(' ');
-        var cmd = args[0];
+        // Going from no channel connected to connected to one
+        if (oldVoiceStateChannel === null && newVoiceStateChannel !== null) {
+            // First connection to voice channel of the day
+            if (!usersFeedbackSent.includes(memberId)) {
+                const accountId = userList[memberId];
 
-        var user = args[1];
+                let yesterday = new Date();
+                yesterday.setDate(new Date().getDate() - 1);
+                let startYesterday = new Date(yesterday);
+                startYesterday.setHours(0, 0, 0, 0);
+                let endYesterday = new Date(yesterday)
+                endYesterday.setHours(23, 59, 59, 999);
 
-        switch (cmd) {
+                jira.getUserLoggedHoursFromDate(accountId, startYesterday, endYesterday).then(resp => {
+                    const loggedHoursYesterday = jira.getWorkLog(resp, accountId);
+                    const log = loggedHoursYesterday.get(Helper.formatDate(yesterday));
+                    const hoursLogged = Helper.convertToHours(log.time);
+                    oldState.member.send(messageBuilder.buildFeedbackMessage(hoursLogged, oldState.member.displayName));
+                    usersFeedbackSent.push(memberId);
+                });
+            }
+        }
+    }
+);
 
-            case 'wlog':
-                var dStart = args[2];
-                if (dStart == null) {
-                    dStart = 7;
+bot.on('message', msg => {
+    const messageContent = msg.content;
+    const authorId = msg.author.id;
+    const channel = msg.channel
+    logger.info('chan id: ' + channel.name);
+
+    if (messageContent.substring(0, 1) == '!') {
+        const args = messageContent.substring(1).split(' ');
+        const cmd = args[0];
+        const user = args[1];
+
+        if (user) {
+            jira.getUserByUsername(user).then(jiraUser => {
+                if (jiraUser && jiraUser.length) {
+                    handleCommand(cmd, jiraUser[0].accountId, channel, args)
+                } else {
+                    feedbackUserNotFound(channel)
                 }
-                var dateFrom = new Date();
-                dateFrom.setDate(dateFrom.getDate() - dStart);
-                jira.getUserLoggedHoursFromDate(user, dateFrom, new Date()).then(resp => {
-                    var daysToLoggedHours = jira.getWorkLog(resp, user);
-
-                    let message = messageBuilder.buildLoggedHoursMessage(daysToLoggedHours, dateFrom);
-                    bot.sendMessage({
-                        to: channelID,
-                        embed: {
-                            color: 3447003,
-                            description: message
-                        }
-                    });
-
-                });
-                break;
-            case 'status':
-                jira.healthCheck().then(resp => {
-                    let message = messageBuilder.buildHealthMessage(resp);
-                    bot.sendMessage({
-                        to: channelID,
-                        embed: {
-                            color: 3447003,
-                            description: message
-                        }
-                    });
-                });
-
-                break;
-            case 'report':
-                let month = args[2];
-                let nameFile = args[3];
-                const range = Helper.getDateRange(month);
-                jira.getUserLoggedHoursFromDate(user, range.ts, range.te).then(resp => {
-                    const daysToLoggedHours = jira.getWorkLog(resp, user);
-                    const callBackUploadFile = function(fileName){
-                        bot.uploadFile({to: channelID, file: fileName}, () => {
-                            fs.unlinkSync(fileName)
-                        });
-                    };
-                    excelBuilder.buildReportFile(daysToLoggedHours, range.ts, range.te, callBackUploadFile, nameFile);
-                });
-                break;
+            })
+        } else {
+            let accountId = userList[authorId];
+            if (accountId) {
+                handleCommand(cmd, accountId, channel, args)
+            } else {
+                feedbackUserNotFound(channel);
+            }
         }
     }
 });
+
+function feedbackUserNotFound() {
+    const error = new Discord.MessageEmbed()
+        .setTitle("Hours report")
+        .setColor("DARK_RED")
+        .setDescription("User not found")
+    channel.send(error);
+}
+
+function handleCommand(cmd, accountId, channel, args) {
+    switch (cmd) {
+        case 'wlog':
+            let dStart = args[2];
+            if (dStart == null) {
+                dStart = 7;
+            }
+            const dateFrom = new Date();
+            dateFrom.setDate(dateFrom.getDate() - dStart);
+
+            jira.getUserLoggedHoursFromDate(accountId, dateFrom, new Date()).then(resp => {
+                const daysToLoggedHours = jira.getWorkLog(resp, accountId);
+
+                let message = messageBuilder.buildLoggedHoursMessage(daysToLoggedHours, dateFrom);
+                const messageEmbed = new Discord.MessageEmbed()
+                    .setTitle("Hours report")
+                    .setColor(3447003)
+                    .setDescription(message)
+                channel.send(messageEmbed);
+            });
+
+            break;
+        case 'status':
+            jira.healthCheck().then(resp => {
+                let message = messageBuilder.buildHealthMessage(resp);
+                const messageEmbed = new Discord.MessageEmbed()
+                    .setTitle("Health check")
+                    .setColor(3447003)
+                    .setDescription(message)
+                channel.send(messageEmbed);
+            });
+            break;
+        case 'report':
+            let month = args[2];
+            let nameFile = args[3];
+            const range = Helper.getDateRange(month);
+            jira.getUserLoggedHoursFromDate(accountId, range.ts, range.te).then(resp => {
+                const daysToLoggedHours = jira.getWorkLog(resp, accountId);
+                const callBackUploadFile = function (fileName) {
+                    channel.send({
+                        files: [fileName]
+                    })
+                };
+                excelBuilder.buildReportFile(daysToLoggedHours, range.ts, range.te, callBackUploadFile, nameFile);
+            });
+            break;
+    }
+}

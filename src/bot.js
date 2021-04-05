@@ -47,14 +47,17 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
 
                 let yesterday = new Date();
                 yesterday.setDate(new Date().getDate() - 1);
-                let startYesterday = new Date(yesterday);
-                startYesterday.setHours(0, 0, 0, 0);
-                let endYesterday = new Date(yesterday)
-                endYesterday.setHours(23, 59, 59, 999);
 
-                jira.getUserLoggedHoursFromDate(accountId, startYesterday, endYesterday).then(resp => {
+                const lastWorkingDay = Helper.isWeekend(yesterday) ? Helper.getLastFridayOf(new Date()) : yesterday;
+
+                let startLastWorkingDay = new Date(lastWorkingDay);
+                startLastWorkingDay.setHours(0, 0, 0, 0);
+                let endLastWorkingDay = new Date(lastWorkingDay)
+                endLastWorkingDay.setHours(23, 59, 59, 999);
+
+                jira.getUserLoggedHoursFromDate(accountId, startLastWorkingDay, endLastWorkingDay).then(resp => {
                     const loggedHoursYesterday = jira.getWorkLog(resp, accountId);
-                    const log = loggedHoursYesterday.get(Helper.formatDate(yesterday));
+                    const log = loggedHoursYesterday.get(Helper.formatDate(lastWorkingDay));
                     const hoursLogged = Helper.convertToHours(log.time);
                     oldState.member.send(messageBuilder.buildFeedbackMessage(hoursLogged, oldState.member.displayName));
                     usersFeedbackSent.push(memberId);

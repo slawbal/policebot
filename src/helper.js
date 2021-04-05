@@ -22,6 +22,19 @@ class Helper {
         return day.getDay() == 6 || day.getDay() == 0;
     }
 
+    static getLastFridayOf(day){
+        var d = new Date(day),
+            day = d.getDay(),
+            diff = (day <= 5) ? (7 - 5 + day ) : (day - 5);
+
+        d.setDate(d.getDate() - diff);
+        d.setHours(0);
+        d.setMinutes(0);
+        d.setSeconds(0);
+
+        return d;
+    }
+
     static convertToHours(loggedTimeForADayInMs) {
         const HOUR = 3600;
         return Number(loggedTimeForADayInMs) / HOUR;

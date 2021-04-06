@@ -58,7 +58,7 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
                 jira.getUserLoggedHoursFromDate(accountId, startLastWorkingDay, endLastWorkingDay).then(resp => {
                     const loggedHoursYesterday = jira.getWorkLog(resp, accountId);
                     const log = loggedHoursYesterday.get(Helper.formatDate(lastWorkingDay));
-                    const hoursLogged = Helper.convertToHours(log.time);
+                    const hoursLogged = log ? Helper.convertToHours(log.time) : 0;
                     oldState.member.send(messageBuilder.buildFeedbackMessage(hoursLogged, oldState.member.displayName));
                     usersFeedbackSent.push(memberId);
                 });

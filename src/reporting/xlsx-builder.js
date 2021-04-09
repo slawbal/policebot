@@ -24,7 +24,7 @@ class ExcelBuilder {
         this.buildHeader(ws, this.headerStyle);
         let row = 2;
         for (let day = timeStart; day <= timeEnd; day.setDate(day.getDate() + 1)) {
-            let log = myMap.get(new Date(day.toDateString()))
+            let log = myMap.get(Helper.formatDate(day))
             this.buildRow(ws, day, row++, log);
         }
 

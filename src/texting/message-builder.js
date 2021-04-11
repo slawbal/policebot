@@ -6,9 +6,10 @@ bad = ":x:";
 tooGood = ":hammer_pick:";
 weekend = ":island:";
 
-noReporting = 'You forgot to log your hours yesterday :frowning: Please try to do it as soon as possible.';
-uncompleteReporting = 'You logged some hours yesterday but it does not reach 8, please try to fill the blank :+1:';
-completeReporting = 'Good job for logging your hours yesterday :clap: Keep up the good work! ';
+LAST_WORKING_DAY_PLACEHOLDER = '_LAST_WORKING_DAY_';
+noReporting = 'You forgot to log your hours _LAST_WORKING_DAY_ :frowning: Please try to do it as soon as possible.';
+uncompleteReporting = 'You logged some hours _LAST_WORKING_DAY_ but it does not reach 8, please try to fill the blank :+1:';
+completeReporting = 'Good job for logging your hours _LAST_WORKING_DAY_ :clap: Keep up the good work! ';
 
 let cfgFile = fs.readFileSync('resources/config.json');
 let config = JSON.parse(cfgFile);
@@ -26,7 +27,8 @@ class MessageBuilder {
         return "Status: \n" + jiraStatus;
     }
 
-    buildFeedbackMessage(hoursLogged, username) {
+    buildFeedbackMessage(hoursLogged, username, wasFriday) {
+        let lastWorkingDay = wasFriday ? 'on Friday' : 'yesterday';
         let message = 'Good morning ' + username + ' :spy: \n';
         if (hoursLogged === 0) {
             message = message + noReporting;
@@ -35,6 +37,7 @@ class MessageBuilder {
         } else if (hoursLogged === 8) {
             message = message + completeReporting;
         }
+        message = message.replace(LAST_WORKING_DAY_PLACEHOLDER, lastWorkingDay);
         return message;
     }
 

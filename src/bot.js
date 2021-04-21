@@ -97,7 +97,7 @@ bot.on('message', msg => {
     }
 });
 
-function feedbackUserNotFound() {
+function feedbackUserNotFound(channel) {
     const error = new Discord.MessageEmbed()
         .setTitle("Hours report")
         .setColor("DARK_RED")

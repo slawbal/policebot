@@ -59,7 +59,7 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
                     const loggedHoursYesterday = jira.getWorkLog(resp, accountId);
                     const log = loggedHoursYesterday.get(Helper.formatDate(lastWorkingDay));
                     const hoursLogged = log ? Helper.convertToHours(log.time) : 0;
-                    oldState.member.send(messageBuilder.buildFeedbackMessage(hoursLogged, oldState.member.displayName));
+                    oldState.member.send(messageBuilder.buildFeedbackMessage(hoursLogged, oldState.member.displayName, Helper.isWeekend(yesterday)));
                     usersFeedbackSent.push(memberId);
                 });
             }
@@ -97,7 +97,7 @@ bot.on('message', msg => {
     }
 });
 
-function feedbackUserNotFound() {
+function feedbackUserNotFound(channel) {
     const error = new Discord.MessageEmbed()
         .setTitle("Hours report")
         .setColor("DARK_RED")
@@ -146,7 +146,12 @@ function handleCommand(cmd, accountId, channel, args) {
                 const callBackUploadFile = function (fileName) {
                     channel.send({
                         files: [fileName]
-                    })
+                    }).then(() =>{
+                        fs.unlink(fileName, (err) => {
+                            if (err) throw err;
+                            console.log(fileName + ' was deleted');
+                        });
+                    });
                 };
                 excelBuilder.buildReportFile(daysToLoggedHours, range.ts, range.te, callBackUploadFile, nameFile);
             });

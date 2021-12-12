@@ -160,7 +160,6 @@ function handleCommand(cmd, accountId, channel, args) {
             const year = args[2];
             const nameReport = args[3];
             const months_polish = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Pazdziernik', 'Listopad', 'Grudzień'];
-            // const months = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Pazdziernik', 'Listopad', 'Grudzień'];
             const callBackUploadFile = function (fileName) {
                 channel.send({
                     files: [fileName]
@@ -178,48 +177,8 @@ function handleCommand(cmd, accountId, channel, args) {
                     return jira.getUserIssuesDuringPeriod(accountId, rangeByYearAndMonth.ts, rangeByYearAndMonth.te);
                 }));
                 const infoIssuesMonthly = jira.extractInfo(response, accountId, year);
-                const callBackUploadFile = function (fileName) {
-                    channel.send({
-                        files: [fileName]
-                    }).then(() => {
-                        fs.unlink(fileName, (err) => {
-                            if (err) throw err;
-                            console.log(fileName + ' was deleted');
-                        });
-                    });
-                };
-                // excelBuilder.buildReportFile(daysToLoggedHours, range.ts, range.te, callBackUploadFile, nameFile);
                 excelBuilder.buildYearlyReportFile(infoIssuesMonthly, year, callBackUploadFile, nameReport)
-
             })();
-
-
-
-            // months_polish.forEach((month, index) => {
-            //
-            //     const rangeByYearAndMonth = Helper.getDateRange(year, index);
-            //
-            //
-            //     jira.getUserIssuesDuringPeriod(accountId, rangeByYearAndMonth.ts, rangeByYearAndMonth.te).then(resp => {
-            //         const infoIssuesMonthly = jira.extractInfo(resp, month);
-            //         const callBackUploadFile = function (fileName) {
-            //             channel.send({
-            //                 files: [fileName]
-            //             }).then(() => {
-            //                 fs.unlink(fileName, (err) => {
-            //                     if (err) throw err;
-            //                     console.log(fileName + ' was deleted');
-            //                 });
-            //             });
-            //         };
-            //         // excelBuilder.buildReportFile(daysToLoggedHours, range.ts, range.te, callBackUploadFile, nameFile);
-            //         excelBuilder.buildYearlyReportFile(infoIssuesMonthly, year, callBackUploadFile, nameReport)
-            //     });
-            //
-            //
-            // });
-
-
             break;
     }
 }

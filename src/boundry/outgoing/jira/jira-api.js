@@ -85,6 +85,40 @@ function getLoggedHoursForUserJiraQuery(user, ts, te) {
         }`;
 }
 
+module.exports.getUserIssuesDuringPeriod = function (user, dateStart, dateEnd) {
+    return fetch(url + api + '/search', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Basic ${Buffer.from(
+                login + ':' + token
+            ).toString('base64')}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: getIssuesInfoForUserJiraQuery(user, dateStart.getTime(), dateEnd.getTime())
+    }).then(response => {
+        return response.json();
+    });
+}
+
+function getIssuesInfoForUserJiraQuery(user, ts, te) {
+    return `{
+          "expand": [
+            "names",
+            "schema",
+            "operations"
+          ],
+          "jql": "assignee changed after ${ts} to currentUser() AND assignee changed before ${te} to ${user}",
+          "maxResults": 100,
+          "fields": [
+            "summary",
+            "issuetype",
+            "worklog"
+          ],
+          "startAt": 0
+        }`;
+}
+
 module.exports.getWorkLog = function (resp, user) {
     var dateToLoggedHours = new SortedMap();
     resp.issues.forEach(issue => {
@@ -103,6 +137,47 @@ module.exports.getWorkLog = function (resp, user) {
         });
     });
     return dateToLoggedHours;
+}
+
+module.exports.extractInfo = function (resp, user, year) {
+    var infoIssuesMonthly = new SortedMap();
+
+    resp.forEach((issuesByMonth, index) => {
+        issuesByMonth.issues.forEach(issue => {
+            let timeLogged = getLoggedTimeByPeriod(issue.fields.worklog.worklogs, year, index, user)
+            if (infoIssuesMonthly.get(index) == null) {
+                infoIssuesMonthly.set(index, [
+                    {
+                        key: issue.key,
+                        description: `${issue.fields.issuetype.name} - ${issue.fields.summary}`,
+                        timeLogged: timeLogged
+                    }
+                ])
+            } else {
+                const issues = infoIssuesMonthly.get(index);
+                issues.push({
+                    key: issue.key,
+                    description: `${issue.fields.issuetype.name} - ${issue.fields.summary}`,
+                    timeLogged: timeLogged
+                });
+            }
+        });
+    });
+    return infoIssuesMonthly;
+}
+
+function getLoggedTimeByPeriod(worklogs, year, monthIndex, user) {
+    let timeSpent = 0;
+    worklogs.forEach(workLogItem => {
+        if (workLogItem.updateAuthor.accountId === user) {
+            const dateStarted = Helper.getYearMonthIndex(workLogItem.started);
+            if (Number(dateStarted.year) === Number(year) && Number(dateStarted.month) === Number(monthIndex)) {
+                timeSpent += workLogItem.timeSpentSeconds
+            }
+        }
+    });
+
+    return timeSpent !== 0 ? `${Helper.convertToHours(timeSpent)}h` : 'unlogged';
 }
 
 function timeout(ms, promise) {

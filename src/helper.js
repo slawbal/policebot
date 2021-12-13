@@ -18,14 +18,21 @@ class Helper {
         return {ts: startOfMonth.toDate(), te: endOfMonth.toDate()}
     }
 
+    static getDateRange(year, monthIndex) {
+        const startOfMonth = moment().year(year).month(monthIndex).startOf('month').hour(TIME_MIN_START_OF_DAY);
+        const endOfMonth = moment().year(year).month(monthIndex).endOf('month').hour(TIME_MAX_END_OF_DAY);
+
+        return {ts: startOfMonth.toDate(), te: endOfMonth.toDate()}
+    }
+
     static isWeekend(day) {
         return day.getDay() == 6 || day.getDay() == 0;
     }
 
-    static getLastFridayOf(day){
+    static getLastFridayOf(day) {
         var d = new Date(day),
             day = d.getDay(),
-            diff = (day <= 5) ? (7 - 5 + day ) : (day - 5);
+            diff = (day <= 5) ? (7 - 5 + day) : (day - 5);
 
         d.setDate(d.getDate() - diff);
         d.setHours(0);
@@ -52,6 +59,13 @@ class Helper {
             day = '0' + day;
 
         return [year, month, day].join('-');
+    }
+
+    static getYearMonthIndex(date) {
+        let d = new Date(date),
+            month = d.getMonth(),
+            year = d.getFullYear();
+        return {year, month};
     }
 }
 

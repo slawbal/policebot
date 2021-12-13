@@ -138,15 +138,15 @@ function handleCommand(cmd, accountId, channel, args) {
             });
             break;
         case 'report':
-            let month = args[2];
-            let nameFile = args[3];
+            const month = args[2];
+            const nameFile = args[3];
             const range = Helper.getDateRange(month);
             jira.getUserLoggedHoursFromDate(accountId, range.ts, range.te).then(resp => {
                 const daysToLoggedHours = jira.getWorkLog(resp, accountId);
                 const callBackUploadFile = function (fileName) {
                     channel.send({
                         files: [fileName]
-                    }).then(() =>{
+                    }).then(() => {
                         fs.unlink(fileName, (err) => {
                             if (err) throw err;
                             console.log(fileName + ' was deleted');
@@ -155,6 +155,30 @@ function handleCommand(cmd, accountId, channel, args) {
                 };
                 excelBuilder.buildReportFile(daysToLoggedHours, range.ts, range.te, callBackUploadFile, nameFile);
             });
+            break;
+        case 'report_yearly':
+            const year = args[2];
+            const nameReport = args[3];
+            const months_polish = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Pazdziernik', 'Listopad', 'Grudzień'];
+            const callBackUploadFile = function (fileName) {
+                channel.send({
+                    files: [fileName]
+                }).then(() => {
+                    fs.unlink(fileName, (err) => {
+                        if (err) throw err;
+                        console.log(fileName + ' was deleted');
+                    });
+                });
+            };
+
+            (async () => {
+                const response = await Promise.all(months_polish.map((month, index) => {
+                    const rangeByYearAndMonth = Helper.getDateRange(year, index);
+                    return jira.getUserIssuesDuringPeriod(accountId, rangeByYearAndMonth.ts, rangeByYearAndMonth.te);
+                }));
+                const infoIssuesMonthly = jira.extractInfo(response, accountId, year);
+                excelBuilder.buildYearlyReportFile(infoIssuesMonthly, year, callBackUploadFile, nameReport)
+            })();
             break;
     }
 }

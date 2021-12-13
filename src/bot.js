@@ -82,6 +82,8 @@ bot.on('message', msg => {
             jira.getUserByUsername(user).then(jiraUser => {
                 if (jiraUser && jiraUser.length) {
                     handleCommand(cmd, jiraUser[0].accountId, channel, args)
+                } else if (onlyLettersAndDigits(user)) {
+                    handleCommand(cmd, user, channel, args)
                 } else {
                     feedbackUserNotFound(channel)
                 }
@@ -96,6 +98,10 @@ bot.on('message', msg => {
         }
     }
 });
+
+function onlyLettersAndDigits(str) {
+    return /\d/.test(str) && /[a-z]/i.test(str);
+}
 
 function feedbackUserNotFound(channel) {
     const error = new Discord.MessageEmbed()

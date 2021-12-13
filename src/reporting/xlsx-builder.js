@@ -190,7 +190,7 @@ class ExcelBuilder {
             dateFormat: 'dd/mm/yyyy'
         })
 
-        const ws = wb.addWorksheet('Ewidencja projektwa');
+        const ws = wb.addWorksheet('Ewidencja projektowa');
         this.setYearlyReportWidth(ws);
         this.createStyles(wb)
         this.buildHeaderReportYearly(ws, this.headerStyle);

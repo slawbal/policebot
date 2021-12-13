@@ -108,7 +108,7 @@ function getIssuesInfoForUserJiraQuery(user, ts, te) {
             "schema",
             "operations"
           ],
-          "jql": "assignee changed after ${ts} to currentUser() AND assignee changed before ${te} to ${user}",
+          "jql": "assignee changed after ${ts} to ${user} AND assignee changed before ${te} to ${user}",
           "maxResults": 100,
           "fields": [
             "summary",
